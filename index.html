@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dentelle — Lingerie Féminine de Prestige</title>
+  <meta name="description" content="Lingerie féminine haut de gamme. Découvrez notre collection de sous-vêtements élégants.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────────────────────── -->
+<nav class="nav" id="nav">
+  <a href="index.html" class="nav__logo">Dent<span>elle</span></a>
+  <ul class="nav__links">
+    <li><a href="index.html" class="active">Accueil</a></li>
+    <li><a href="boutique.html">Boutique</a></li>
+    <li><a href="boutique.html?cat=soutiens-gorge">Soutiens-gorge</a></li>
+    <li><a href="boutique.html?cat=nuisettes">Nuisettes</a></li>
+    <li><a href="boutique.html?cat=sets">Sets</a></li>
+  </ul>
+  <div class="nav__actions">
+    <a href="panier.html" class="nav__cart">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+      </svg>
+      <span class="cart-badge" id="cartBadge"></span>
+    </a>
+    <button class="nav__burger" id="burger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile nav -->
+<div class="nav__mobile" id="mobileNav">
+  <a href="index.html">Accueil</a>
+  <a href="boutique.html">Boutique</a>
+  <a href="boutique.html?cat=soutiens-gorge">Soutiens-gorge</a>
+  <a href="boutique.html?cat=nuisettes">Nuisettes</a>
+  <a href="boutique.html?cat=sets">Sets</a>
+  <a href="panier.html">Mon panier</a>
+</div>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero__bg"></div>
+  <div class="hero__content">
+    <p class="eyebrow">Nouvelle collection</p>
+    <h1>L'élégance<br><em>à fleur de peau</em></h1>
+    <span class="thread thread--left"></span>
+    <p>De la dentelle au satin, chaque pièce est pensée pour sublimer votre féminité avec raffinement.</p>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+      <a href="boutique.html" class="btn btn--primary">Découvrir la collection</a>
+      <a href="boutique.html?cat=nouveautes" class="btn btn--outline">Nouveautés</a>
+    </div>
+  </div>
+  <div class="hero__img-wrap">
+    <img src="https://images.unsplash.com/photo-1617952236317-0bd127407984?w=1200&q=80" alt="Lingerie élégante">
+  </div>
+</section>
+
+<!-- ── Catégories ──────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <p class="eyebrow">Explorez</p>
+      <h2>Nos catégories</h2>
+      <span class="thread"></span>
+    </div>
+    <div class="categories" id="categoriesGrid">
+      <!-- populated by JS -->
+      <a href="boutique.html?cat=" class="category-card">
+        <img src="https://images.unsplash.com/photo-1616763355548-1b606f439f86?w=600&q=80" alt="Soutiens-gorge" loading="lazy">
+        <div class="category-card__label"><h3>Soutiens-gorge</h3></div>
+      </a>
+      <a href="boutique.html?cat=" class="category-card">
+        <img src="https://images.unsplash.com/photo-1608042314453-ae338d80c427?w=600&q=80" alt="Culottes" loading="lazy">
+        <div class="category-card__label"><h3>Culottes &amp; Shorties</h3></div>
+      </a>
+      <a href="boutique.html?cat=" class="category-card">
+        <img src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=600&q=80" alt="Nuisettes" loading="lazy">
+        <div class="category-card__label"><h3>Nuisettes</h3></div>
+      </a>
+      <a href="boutique.html?cat=" class="category-card">
+        <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=600&q=80" alt="Sets" loading="lazy">
+        <div class="category-card__label"><h3>Sets coordonnés</h3></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Produits vedettes ────────────────────────────────────────────────────── -->
+<section class="section" style="background:var(--mauve-light)">
+  <div class="container">
+    <div class="section__head">
+      <p class="eyebrow">Sélection</p>
+      <h2>Coups de cœur</h2>
+      <span class="thread"></span>
+      <p style="color:var(--gray);max-width:480px;margin:0 auto">Nos pièces les plus désirées, choisies pour leur élégance intemporelle.</p>
+    </div>
+    <div class="products-grid" id="featuredGrid">
+      <div class="loader"><div class="spinner"></div></div>
+    </div>
+    <div style="text-align:center;margin-top:3rem">
+      <a href="boutique.html" class="btn btn--outline">Voir toute la collection</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Bannière valeurs ─────────────────────────────────────────────────────── -->
+<section class="section--sm" style="background:var(--black);color:var(--white)">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;text-align:center">
+      <div>
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.2" style="margin:0 auto 1rem">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+        <p style="font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.5rem;color:var(--gold)">Livraison</p>
+        <p style="font-size:.88rem;color:rgba(255,255,255,.7)">Livraison offerte dès 500 MAD</p>
+      </div>
+      <div>
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.2" style="margin:0 auto 1rem">
+          <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622C17.176 19.29 21 14.591 21 9a12.02 12.02 0 00-.382-3.016z"/>
+        </svg>
+        <p style="font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.5rem;color:var(--gold)">Qualité</p>
+        <p style="font-size:.88rem;color:rgba(255,255,255,.7)">Matières soigneusement sélectionnées</p>
+      </div>
+      <div>
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.2" style="margin:0 auto 1rem">
+          <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+        </svg>
+        <p style="font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.5rem;color:var(--gold)">Emballage</p>
+        <p style="font-size:.88rem;color:rgba(255,255,255,.7)">Emballage luxueux et discret</p>
+      </div>
+      <div>
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.2" style="margin:0 auto 1rem">
+          <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+        <p style="font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.5rem;color:var(--gold)">Service</p>
+        <p style="font-size:.88rem;color:rgba(255,255,255,.7)">Conseil personnalisé disponible</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div>
+        <a href="index.html" class="footer__logo">Dent<span>elle</span></a>
+        <p>Lingerie féminine haut de gamme. Parce que chaque femme mérite de se sentir belle, de l'intérieur.</p>
+      </div>
+      <div>
+        <h5>Boutique</h5>
+        <ul>
+          <li><a href="boutique.html">Tous les produits</a></li>
+          <li><a href="boutique.html?cat=nouveautes">Nouveautés</a></li>
+          <li><a href="boutique.html?cat=promotions">Promotions</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Aide</h5>
+        <ul>
+          <li><a href="#">Guide des tailles</a></li>
+          <li><a href="#">Livraison</a></li>
+          <li><a href="#">Retours</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>À propos</h5>
+        <ul>
+          <li><a href="#">Notre histoire</a></li>
+          <li><a href="#">Nos valeurs</a></li>
+          <li><a href="#">CGV</a></li>
+          <li><a href="#">Confidentialité</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2024 Dentelle. Tous droits réservés.</span>
+      <span style="color:var(--mauve);font-size:.7rem;letter-spacing:.1em">LINGERIE FÉMININE DE PRESTIGE</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/products.js"></script>
+<script>
+  // Nav scroll
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Burger
+  const burger = document.getElementById('burger');
+  const mobileNav = document.getElementById('mobileNav');
+  burger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+
+  // Charger les produits vedettes
+  async function loadFeatured() {
+    const products = await fetchFeaturedProducts(8);
+    const grid = document.getElementById('featuredGrid');
+    if (!products.length) {
+      grid.innerHTML = '<p class="empty-state">Aucun produit vedette pour le moment.</p>';
+      return;
+    }
+    grid.innerHTML = products.map(renderProductCard).join('');
+  }
+
+  // Charger les catégories
+  async function loadCategories() {
+    const cats = await fetchCategories();
+    if (!cats.length) return;
+    const grid = document.getElementById('categoriesGrid');
+    const catImages = [
+      'https://images.unsplash.com/photo-1616763355548-1b606f439f86?w=600&q=80',
+      'https://images.unsplash.com/photo-1608042314453-ae338d80c427?w=600&q=80',
+      'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=600&q=80',
+      'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=600&q=80',
+    ];
+    grid.innerHTML = cats.slice(0, 4).map((cat, i) => `
+      <a href="boutique.html?category=${cat.id}" class="category-card">
+        <img src="${cat.image_url || catImages[i % catImages.length]}" alt="${cat.name}" loading="lazy">
+        <div class="category-card__label"><h3>${cat.name}</h3></div>
+      </a>`).join('');
+  }
+
+  loadFeatured();
+  loadCategories();
+</script>
+</body>
+</html>

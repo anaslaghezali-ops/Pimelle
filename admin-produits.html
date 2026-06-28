@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produits — Dentelle Admin</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar__head">
+      <a href="index.html" class="sidebar__logo">Dent<span>elle</span></a>
+      <p class="sidebar__role">Administration</p>
+    </div>
+    <nav class="sidebar__nav">
+      <a href="admin-dashboard.html">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Tableau de bord
+      </a>
+      <a href="admin-commandes.html">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Commandes
+      </a>
+      <a href="admin-produits.html" class="active">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Produits
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="btn-logout" onclick="adminLogout()">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Gestion des produits</h1>
+      <button class="btn btn--rose" onclick="openProductModal()">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4v16m8-8H4"/></svg>
+        Ajouter un produit
+      </button>
+    </div>
+
+    <div class="admin-content">
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <div class="toolbar">
+            <div class="search-admin">
+              <input type="text" id="searchInput" placeholder="Rechercher un produit…">
+              <button onclick="loadProducts()">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              </button>
+            </div>
+            <select class="filter-select" id="catFilter" onchange="loadProducts()">
+              <option value="">Toutes les catégories</option>
+            </select>
+          </div>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Nom</th>
+              <th>Catégorie</th>
+              <th>Prix</th>
+              <th>Stock</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productsBody">
+            <tr><td colspan="7"><div class="loader"><div class="spinner"></div></div></td></tr>
+          </tbody>
+        </table>
+        <div id="pagination" style="padding:1rem 1.5rem;display:flex;gap:.5rem;justify-content:flex-end"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Modal produit ────────────────────────────────────────────────────────── -->
+<div class="modal" id="productModal">
+  <div class="modal__overlay" onclick="closeProductModal()"></div>
+  <div class="modal__box">
+    <div class="modal__head">
+      <h2 id="modalTitle">Nouveau produit</h2>
+      <button class="modal__close" onclick="closeProductModal()">✕</button>
+    </div>
+
+    <form id="productForm" novalidate>
+      <input type="hidden" id="productId">
+
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Nom du produit *</label>
+          <input type="text" class="form-input" id="pName" placeholder="Ex : Soutien-gorge dentelle rose">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prix (MAD) *</label>
+          <input type="number" class="form-input" id="pPrice" placeholder="299.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock *</label>
+          <input type="number" class="form-input" id="pStock" placeholder="50" min="0">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Catégorie</label>
+          <select class="form-select" id="pCategory">
+            <option value="">Aucune catégorie</option>
+          </select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="pDesc" placeholder="Description du produit…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tailles (séparées par virgule)</label>
+          <input type="text" class="form-input" id="pSizes" placeholder="S, M, L, XL, 85B, 90C">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Couleurs (séparées par virgule)</label>
+          <input type="text" class="form-input" id="pColors" placeholder="Blanc, Noir, Rose, Nude">
+        </div>
+        <div class="form-group">
+          <div class="toggle-group">
+            <label class="toggle">
+              <input type="checkbox" id="pActive" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Produit actif (visible en boutique)</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="toggle-group">
+            <label class="toggle">
+              <input type="checkbox" id="pFeatured">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Produit vedette (page d'accueil)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div style="margin-top:1.2rem">
+        <label class="form-label" style="display:block;margin-bottom:.75rem">Images du produit</label>
+        <div id="imagePreviewGrid" class="image-preview-grid"></div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <p>Cliquez ou déposez vos images ici</p>
+          <p style="font-size:.75rem;color:var(--mauve)">JPG, PNG, WebP · Plusieurs images possibles · La première sera l'image principale</p>
+        </div>
+        <input type="file" id="imageInput" multiple accept="image/*" style="display:none" onchange="handleImages(this.files)">
+      </div>
+
+      <div style="display:flex;gap:1rem;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--gray-light)">
+        <button type="submit" class="btn btn--rose" id="saveProductBtn">Enregistrer</button>
+        <button type="button" class="btn btn--outline" onclick="closeProductModal()">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+<script>
+  let editingId = null;
+  let pendingImages = [];
+  let existingImages = [];
+  let currentPage = 1;
+  const LIMIT = 20;
+
+  (async () => {
+    const ok = await requireAdmin();
+    if (!ok) return;
+    await loadCategoryOptions();
+    await loadProducts();
+  })();
+
+  async function loadCategoryOptions() {
+    const { data: cats } = await supabase.from('categories').select('*').order('sort_order');
+    const selects = [document.getElementById('catFilter'), document.getElementById('pCategory')];
+    selects[0].innerHTML = '<option value="">Toutes les catégories</option>';
+    selects[1].innerHTML = '<option value="">Aucune catégorie</option>';
+    (cats || []).forEach(cat => {
+      selects[0].innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+      selects[1].innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+    });
+  }
+
+  async function loadProducts() {
+    const search = document.getElementById('searchInput').value.trim();
+    const categoryId = document.getElementById('catFilter').value;
+    const tbody = document.getElementById('productsBody');
+    tbody.innerHTML = '<tr><td colspan="7"><div class="loader"><div class="spinner"></div></div></td></tr>';
+
+    const { products, total } = await adminFetchProducts({ search, categoryId, page: currentPage, limit: LIMIT });
+    if (!products.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gray)">Aucun produit</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = products.map(p => {
+      const stockColor = p.stock <= 0 ? 'var(--error)' : p.stock <= 5 ? '#D6B656' : 'var(--success)';
+      return `
+        <tr>
+          <td><img src="${p.cover_image ? getImageUrl(p.cover_image) : 'https://placehold.co/48x60/F5EDED/C9A0A0?text=?'}" class="product-thumb" alt="${p.name}"></td>
+          <td><strong>${p.name}</strong></td>
+          <td style="color:var(--gray)">${p.categories?.name || '—'}</td>
+          <td><strong>${new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(p.price)}</strong></td>
+          <td style="color:${stockColor};font-weight:500">${p.stock}</td>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:500;color:${p.is_active ? 'var(--success)' : 'var(--gray)'}">
+              ${p.is_active ? '● Actif' : '○ Inactif'}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;gap:.5rem">
+              <button class="action-btn action-btn--edit" onclick="editProduct('${p.id}')">Modifier</button>
+              <button class="action-btn action-btn--delete" onclick="deleteProduct('${p.id}', '${p.name.replace(/'/g, "\\'")}')">Supprimer</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    // Pagination
+    const pages = Math.ceil(total / LIMIT);
+    const pag = document.getElementById('pagination');
+    if (pages <= 1) { pag.innerHTML = ''; return; }
+    pag.innerHTML = Array.from({length: pages}, (_,i) => `
+      <button style="min-width:32px;height:32px;border:1px solid ${i+1===currentPage?'var(--black)':'var(--gray-light)'};background:${i+1===currentPage?'var(--black)':'transparent'};color:${i+1===currentPage?'white':'var(--gray)'};border-radius:2px;font-size:.78rem;cursor:pointer" onclick="goPage(${i+1})">${i+1}</button>`).join('');
+  }
+
+  function goPage(n) { currentPage = n; loadProducts(); }
+
+  function openProductModal(data = null) {
+    editingId = data?.id || null;
+    pendingImages = [];
+    existingImages = data?.images || [];
+    document.getElementById('modalTitle').textContent = data ? 'Modifier le produit' : 'Nouveau produit';
+    document.getElementById('productId').value = data?.id || '';
+    document.getElementById('pName').value = data?.name || '';
+    document.getElementById('pPrice').value = data?.price || '';
+    document.getElementById('pStock').value = data?.stock ?? '';
+    document.getElementById('pDesc').value = data?.description || '';
+    document.getElementById('pSizes').value = (data?.sizes || []).join(', ');
+    document.getElementById('pColors').value = (data?.colors || []).join(', ');
+    document.getElementById('pActive').checked = data ? data.is_active : true;
+    document.getElementById('pFeatured').checked = data?.is_featured || false;
+    if (data?.category_id) document.getElementById('pCategory').value = data.category_id;
+    renderImagePreviews();
+    document.getElementById('productModal').classList.add('open');
+  }
+
+  function closeProductModal() {
+    document.getElementById('productModal').classList.remove('open');
+    editingId = null;
+    pendingImages = [];
+    existingImages = [];
+    document.getElementById('imagePreviewGrid').innerHTML = '';
+    document.getElementById('imageInput').value = '';
+  }
+
+  async function editProduct(id) {
+    const { data } = await supabase.from('products').select('*, product_images(*)').eq('id', id).single();
+    if (!data) return;
+    openProductModal({ ...data, images: data.product_images || [] });
+  }
+
+  async function deleteProduct(id, name) {
+    if (!confirm(`Supprimer "${name}" ? Cette action est irréversible.`)) return;
+    const ok = await adminDeleteProduct(id);
+    if (ok) { showToast('Produit supprimé'); loadProducts(); }
+    else showToast('Erreur lors de la suppression', 'error');
+  }
+
+  function handleImages(files) {
+    const arr = Array.from(files);
+    pendingImages.push(...arr);
+    renderImagePreviews();
+  }
+
+  function renderImagePreviews() {
+    const grid = document.getElementById('imagePreviewGrid');
+    let html = '';
+    existingImages.forEach((img, i) => {
+      html += `<div class="image-preview ${img.is_cover ? 'cover-img' : ''}" title="${img.is_cover ? 'Image principale' : ''}">
+        <img src="${getImageUrl(img.image_url)}" alt="">
+        <button class="image-preview__del" onclick="removeExisting(${i})">✕</button>
+      </div>`;
+    });
+    pendingImages.forEach((file, i) => {
+      const url = URL.createObjectURL(file);
+      html += `<div class="image-preview">
+        <img src="${url}" alt="">
+        <button class="image-preview__del" onclick="removePending(${i})">✕</button>
+      </div>`;
+    });
+    grid.innerHTML = html;
+  }
+
+  function removeExisting(i) {
+    existingImages.splice(i, 1);
+    renderImagePreviews();
+  }
+  function removePending(i) {
+    pendingImages.splice(i, 1);
+    renderImagePreviews();
+  }
+
+  // Drag and drop
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    handleImages(e.dataTransfer.files);
+  });
+
+  document.getElementById('productForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('saveProductBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+
+    const formData = {
+      name: document.getElementById('pName').value.trim(),
+      price: document.getElementById('pPrice').value,
+      stock: document.getElementById('pStock').value,
+      description: document.getElementById('pDesc').value.trim(),
+      category_id: document.getElementById('pCategory').value || null,
+      sizes: document.getElementById('pSizes').value.split(',').map(s => s.trim()).filter(Boolean),
+      colors: document.getElementById('pColors').value.split(',').map(s => s.trim()).filter(Boolean),
+      is_active: document.getElementById('pActive').checked,
+      is_featured: document.getElementById('pFeatured').checked,
+    };
+
+    if (!formData.name || !formData.price) {
+      showToast('Nom et prix sont obligatoires', 'error');
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+      return;
+    }
+
+    let productId = editingId;
+
+    if (editingId) {
+      const result = await adminUpdateProduct(editingId, formData);
+      if (result.error) {
+        showToast(result.error, 'error');
+        btn.disabled = false; btn.textContent = 'Enregistrer'; return;
+      }
+    } else {
+      const result = await adminCreateProduct(formData);
+      if (result.error) {
+        showToast(result.error, 'error');
+        btn.disabled = false; btn.textContent = 'Enregistrer'; return;
+      }
+      productId = result.product.id;
+    }
+
+    // Upload pending images
+    for (let i = 0; i < pendingImages.length; i++) {
+      const isCover = i === 0 && existingImages.length === 0;
+      await uploadProductImage(pendingImages[i], productId, isCover);
+    }
+
+    showToast(editingId ? 'Produit mis à jour ✓' : 'Produit créé ✓');
+    closeProductModal();
+    loadProducts();
+  });
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { currentPage = 1; loadProducts(); }
+  });
+</script>
+</body>
+</html>

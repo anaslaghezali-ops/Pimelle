@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration — Dentelle</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+    <div class="logo">Dent<span>elle</span></div>
+    <div class="subtitle">Espace administration</div>
+    <div class="thread"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="form-group" style="margin-bottom:1.2rem;text-align:left">
+        <label class="form-label">Adresse email</label>
+        <input type="email" class="form-input" id="email" placeholder="admin@dentelle.ma" autocomplete="email" autofocus>
+      </div>
+      <div class="form-group" style="margin-bottom:2rem;text-align:left">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" class="form-input" id="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <p id="loginError" style="color:var(--error);font-size:.82rem;margin-bottom:1rem;display:none"></p>
+      <button type="submit" class="btn btn--primary btn--full" id="loginBtn">
+        Se connecter
+      </button>
+    </form>
+
+    <p style="margin-top:2rem;font-size:.72rem;color:var(--gray);letter-spacing:.08em">
+      Dentelle © 2024 — Back-office sécurisé
+    </p>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+<script>
+  // Redirect if already logged in
+  (async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) window.location.href = 'admin-dashboard.html';
+  })();
+
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    if (!email || !password) {
+      errEl.textContent = 'Veuillez renseigner vos identifiants.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Connexion…';
+    errEl.style.display = 'none';
+
+    const result = await adminLogin(email, password);
+    if (result.error) {
+      errEl.textContent = 'Identifiants incorrects. Veuillez réessayer.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Se connecter';
+      return;
+    }
+    window.location.href = 'admin-dashboard.html';
+  });
+</script>
+</body>
+</html>

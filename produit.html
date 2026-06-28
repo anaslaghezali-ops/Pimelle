@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produit — Dentelle</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="page">
+
+<nav class="nav" id="nav">
+  <a href="index.html" class="nav__logo">Dent<span>elle</span></a>
+  <ul class="nav__links">
+    <li><a href="index.html">Accueil</a></li>
+    <li><a href="boutique.html" class="active">Boutique</a></li>
+  </ul>
+  <div class="nav__actions">
+    <a href="panier.html" class="nav__cart">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+      <span class="cart-badge"></span>
+    </a>
+    <button class="nav__burger" id="burger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="nav__mobile" id="mobileNav">
+  <a href="index.html">Accueil</a>
+  <a href="boutique.html">Boutique</a>
+  <a href="panier.html">Mon panier</a>
+</div>
+
+<div id="productPage" class="loader" style="padding:8rem 0"><div class="spinner"></div></div>
+
+<script src="js/config.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/products.js"></script>
+<script>
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+  });
+  document.getElementById('burger').addEventListener('click', () => {
+    document.getElementById('mobileNav').classList.toggle('open');
+  });
+
+  const params = new URLSearchParams(location.search);
+  const productId = params.get('id');
+
+  async function loadProduct() {
+    const wrap = document.getElementById('productPage');
+    if (!productId) { wrap.innerHTML = '<p class="empty-state">Produit introuvable.</p>'; return; }
+
+    const product = await fetchProductById(productId);
+    if (!product) { wrap.innerHTML = '<p class="empty-state">Produit introuvable.</p>'; return; }
+
+    document.title = `${product.name} — Dentelle`;
+
+    const images = (product.product_images || []).sort((a,b) => (a.is_cover ? -1 : 1));
+    const coverImg = images.find(i => i.is_cover) || images[0];
+    const coverSrc = coverImg ? getImageUrl(coverImg.image_url) : getImageUrl(null);
+
+    const sizes = product.sizes || [];
+    const colors = product.colors || [];
+
+    wrap.className = '';
+    wrap.style.padding = '0';
+    wrap.innerHTML = `
+      <div class="page-header">
+        <div class="breadcrumb">
+          <a href="index.html">Accueil</a><span>/</span>
+          <a href="boutique.html">Boutique</a><span>/</span>
+          <span>${product.categories?.name || ''}</span>
+        </div>
+      </div>
+
+      <section class="section">
+        <div class="container">
+          <div class="product-layout">
+
+            <!-- Gallery -->
+            <div class="product-gallery">
+              <div class="product-gallery__main">
+                <img src="${coverSrc}" alt="${product.name}" id="mainImg">
+              </div>
+              <div class="product-gallery__thumbs">
+                ${images.map((img, i) => `
+                  <img src="${getImageUrl(img.image_url)}"
+                       alt="${product.name}"
+                       class="product-gallery__thumb ${i === 0 ? 'active' : ''}"
+                       onclick="changeImg('${getImageUrl(img.image_url)}', this)"
+                       loading="lazy">`
+                ).join('')}
+              </div>
+            </div>
+
+            <!-- Info -->
+            <div class="product-info">
+              <p class="eyebrow">${product.categories?.name || 'Lingerie'}</p>
+              <h1>${product.name}</h1>
+              <p class="product-info__price">${formatPrice(product.price)}</p>
+              <span class="thread thread--left"></span>
+
+              ${sizes.length ? `
+                <label class="option-label">Taille <span id="selectedSize" style="font-weight:400;letter-spacing:0;text-transform:none;color:var(--gray)"></span></label>
+                <div class="options" id="sizeOptions">
+                  ${sizes.map((s, i) => `<button class="option-btn ${i===0?'selected':''}" data-size="${s}" onclick="selectSize('${s}',this)">${s}</button>`).join('')}
+                </div>` : ''}
+
+              ${colors.length ? `
+                <label class="option-label">Couleur <span id="selectedColor" style="font-weight:400;letter-spacing:0;text-transform:none;color:var(--gray)"></span></label>
+                <div class="options" id="colorOptions">
+                  ${colors.map((c, i) => `<button class="option-btn ${i===0?'selected':''}" data-color="${c}" title="${c}" onclick="selectColor('${c}',this)" style="background:${colorHex(c)}">&nbsp;</button>`).join('')}
+                </div>` : ''}
+
+              <label class="option-label">Quantité</label>
+              <div class="qty-control">
+                <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                <input type="number" class="qty-input" id="qtyInput" value="1" min="1" max="${product.stock}">
+                <button class="qty-btn" onclick="changeQty(1)">+</button>
+              </div>
+
+              <p style="font-size:.78rem;color:var(--gray);margin-bottom:1.5rem">
+                ${product.stock > 5 ? `<span style="color:var(--success)">● En stock</span>` :
+                  product.stock > 0 ? `<span style="color:#D6B656">● Plus que ${product.stock} en stock</span>` :
+                  `<span style="color:var(--error)">● Rupture de stock</span>`}
+              </p>
+
+              <button class="btn btn--rose btn--full" id="addToCartBtn" ${product.stock === 0 ? 'disabled' : ''} onclick="addToCart()">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                Ajouter au panier
+              </button>
+              <a href="panier.html" class="btn btn--outline btn--full" style="margin-top:.75rem">Voir le panier</a>
+
+              <!-- Tabs -->
+              <div class="product-tabs">
+                <div class="product-tabs__nav">
+                  <button class="tab-btn active" onclick="showTab('desc',this)">Description</button>
+                  <button class="tab-btn" onclick="showTab('care',this)">Entretien</button>
+                  <button class="tab-btn" onclick="showTab('delivery',this)">Livraison</button>
+                </div>
+                <div class="tab-content active" id="tab-desc">
+                  <p>${product.description || 'Aucune description disponible.'}</p>
+                </div>
+                <div class="tab-content" id="tab-care">
+                  <p>Lavage délicat à 30°C. Ne pas mettre au sèche-linge. Repassage à basse température. Laver séparément les premières fois.</p>
+                </div>
+                <div class="tab-content" id="tab-delivery">
+                  <p>Livraison dans toute la <strong>Maroc</strong> sous 2 à 5 jours ouvrables. Livraison offerte dès 500 MAD d'achat. Emballage discret et soigné.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="container">
+          <div class="footer__bottom" style="border-top:none;padding-top:0">
+            <span>© 2024 Dentelle.</span>
+            <a href="boutique.html" style="color:var(--mauve)">← Retour à la boutique</a>
+          </div>
+        </div>
+      </footer>`;
+
+    // Init selections
+    if (sizes.length) selectSizeInit(sizes[0]);
+    if (colors.length) selectColorInit(colors[0]);
+  }
+
+  function changeImg(src, el) {
+    document.getElementById('mainImg').src = src;
+    document.querySelectorAll('.product-gallery__thumb').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  let selectedSize = null;
+  let selectedColor = null;
+
+  function selectSize(s, btn) {
+    selectedSize = s;
+    document.querySelectorAll('#sizeOptions .option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  function selectSizeInit(s) { selectedSize = s; }
+
+  function selectColor(c, btn) {
+    selectedColor = c;
+    document.querySelectorAll('#colorOptions .option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  function selectColorInit(c) { selectedColor = c; }
+
+  function changeQty(delta) {
+    const input = document.getElementById('qtyInput');
+    let val = parseInt(input.value) + delta;
+    if (val < 1) val = 1;
+    if (val > parseInt(input.max)) val = parseInt(input.max);
+    input.value = val;
+  }
+
+  function colorHex(name) {
+    const map = {
+      blanc: '#FFFFFF', noir: '#1A1A1A', rose: '#F2D7D9', rouge: '#C0392B',
+      beige: '#E8DCCC', ivoire: '#FAFAF0', bordeaux: '#7D2027', bleu: '#5D7FA3',
+      nude: '#D4A891', lilas: '#C8A8D4', crème: '#FFF8E7', chocolat: '#5C3D2E'
+    };
+    return map[name.toLowerCase()] || '#C9A0A0';
+  }
+
+  function showTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  async function addToCart() {
+    const product = await fetchProductById(productId);
+    const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+    const sizes = product.sizes || [];
+    const colors = product.colors || [];
+
+    if (sizes.length && !selectedSize) { showToast('Veuillez choisir une taille', 'error'); return; }
+    if (colors.length && !selectedColor) { showToast('Veuillez choisir une couleur', 'error'); return; }
+
+    const cover = (product.product_images || []).find(i => i.is_cover) || (product.product_images || [])[0];
+    const pData = { ...product, cover_image: cover ? cover.image_url : null };
+
+    Cart.addItem(pData, selectedSize || '-', selectedColor || '-', qty);
+    showToast(`${product.name} ajouté au panier ✓`);
+  }
+
+  loadProduct();
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commande confirmée — Dentelle</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="page">
+
+<nav class="nav">
+  <a href="index.html" class="nav__logo">Dent<span>elle</span></a>
+  <ul class="nav__links">
+    <li><a href="index.html">Accueil</a></li>
+    <li><a href="boutique.html">Boutique</a></li>
+  </ul>
+  <div class="nav__actions">
+    <a href="panier.html" class="nav__cart">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+      <span class="cart-badge"></span>
+    </a>
+  </div>
+</nav>
+
+<section class="section" style="min-height:80vh;display:flex;align-items:center">
+  <div class="container">
+    <div class="confirmation-box">
+
+      <div class="confirmation-icon">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+
+      <p class="eyebrow">Merci pour votre commande</p>
+      <h1 style="font-size:2rem;margin-bottom:.5rem">Commande confirmée</h1>
+      <span class="thread"></span>
+
+      <p style="color:var(--gray);margin-bottom:2rem" id="confirmMsg">
+        Votre commande a bien été enregistrée. Nous vous contacterons très prochainement pour confirmer les détails de livraison.
+      </p>
+
+      <div id="orderDetail" style="background:var(--mauve-light);border-radius:2px;padding:1.5rem;margin-bottom:2rem;text-align:left"></div>
+
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <a href="boutique.html" class="btn btn--rose">Continuer mes achats</a>
+        <a href="index.html" class="btn btn--outline">Retour à l'accueil</a>
+      </div>
+
+      <p style="font-size:.78rem;color:var(--mauve);margin-top:2rem;letter-spacing:.06em">
+        Un email de confirmation vous sera envoyé à l'adresse indiquée.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom" style="border-top:none;padding-top:0">
+      <span>© 2024 Dentelle.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/orders.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get('id');
+
+  async function loadOrder() {
+    if (!orderId) return;
+    const order = await fetchOrderById(orderId);
+    if (!order) return;
+
+    const detail = document.getElementById('orderDetail');
+    detail.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div>
+          <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.2rem">Numéro de commande</p>
+          <p style="font-weight:500;font-size:.9rem">#${order.id.slice(0,8).toUpperCase()}</p>
+        </div>
+        <div>
+          <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.2rem">Date</p>
+          <p style="font-size:.9rem">${new Date(order.created_at).toLocaleDateString('fr-MA')}</p>
+        </div>
+        <div>
+          <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.2rem">Client</p>
+          <p style="font-size:.9rem">${order.customer_first_name} ${order.customer_last_name}</p>
+        </div>
+        <div>
+          <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.2rem">Total</p>
+          <p style="font-weight:500;font-size:.9rem;color:var(--rose-deep)">${formatPrice(order.total_amount)}</p>
+        </div>
+        <div style="grid-column:1/-1">
+          <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.2rem">Livraison à</p>
+          <p style="font-size:.9rem">${order.customer_address}, ${order.customer_city}</p>
+        </div>
+      </div>
+      ${order.order_items ? `
+        <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--gray-light)">
+          ${order.order_items.map(item => `
+            <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:.25rem 0">
+              <span>${item.product_name} (${item.size} / ${item.color}) ×${item.quantity}</span>
+              <span>${formatPrice(item.total_price)}</span>
+            </div>`).join('')}
+        </div>` : ''}`;
+  }
+
+  loadOrder();
+</script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commandes — Dentelle Admin</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar__head">
+      <a href="index.html" class="sidebar__logo">Dent<span>elle</span></a>
+      <p class="sidebar__role">Administration</p>
+    </div>
+    <nav class="sidebar__nav">
+      <a href="admin-dashboard.html">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Tableau de bord
+      </a>
+      <a href="admin-commandes.html" class="active">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Commandes
+      </a>
+      <a href="admin-produits.html">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Produits
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="btn-logout" onclick="adminLogout()">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Commandes</h1>
+      <span id="totalCount" style="font-size:.82rem;color:var(--gray)"></span>
+    </div>
+    <div class="admin-content">
+
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <div class="toolbar">
+            <div class="search-admin">
+              <input type="text" id="searchInput" placeholder="Rechercher (nom, email, téléphone)…">
+              <button onclick="loadOrders()">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              </button>
+            </div>
+            <select class="filter-select" id="statusFilter" onchange="loadOrders()">
+              <option value="">Tous les statuts</option>
+              <option value="nouvelle">Nouvelle</option>
+              <option value="confirmee">Confirmée</option>
+              <option value="preparation">En préparation</option>
+              <option value="expediee">Expédiée</option>
+              <option value="livree">Livrée</option>
+              <option value="annulee">Annulée</option>
+            </select>
+          </div>
+        </div>
+
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>N° Commande</th>
+              <th>Cliente</th>
+              <th>Contact</th>
+              <th>Articles</th>
+              <th>Total</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody">
+            <tr><td colspan="8"><div class="loader"><div class="spinner"></div></div></td></tr>
+          </tbody>
+        </table>
+        <div id="pagination" style="padding:1rem 1.5rem;display:flex;gap:.5rem;justify-content:flex-end"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ── Modal détail commande ────────────────────────────────────────────────── -->
+<div class="modal" id="orderModal">
+  <div class="modal__overlay" onclick="closeOrderModal()"></div>
+  <div class="modal__box" style="max-width:760px">
+    <div class="modal__head">
+      <h2 id="orderModalTitle">Détail de la commande</h2>
+      <button class="modal__close" onclick="closeOrderModal()">✕</button>
+    </div>
+    <div id="orderModalContent"></div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/orders.js"></script>
+<script>
+  let currentPage = 1;
+  const LIMIT = 20;
+
+  (async () => {
+    const ok = await requireAdmin();
+    if (!ok) return;
+
+    // Check URL param for direct order view
+    const params = new URLSearchParams(location.search);
+    if (params.get('id')) {
+      await loadOrders();
+      viewOrder(params.get('id'));
+    } else {
+      await loadOrders();
+    }
+  })();
+
+  async function loadOrders() {
+    const search = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const tbody = document.getElementById('ordersBody');
+    tbody.innerHTML = '<tr><td colspan="8"><div class="loader"><div class="spinner"></div></div></td></tr>';
+
+    const { orders, total } = await fetchOrders({ search, status, page: currentPage, limit: LIMIT });
+    document.getElementById('totalCount').textContent = `${total} commande${total > 1 ? 's' : ''}`;
+
+    if (!orders.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gray)">Aucune commande trouvée</td></tr>';
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = orders.map(o => {
+      const itemCount = o.order_items?.length || 0;
+      return `
+        <tr>
+          <td><strong style="font-family:monospace;font-size:.82rem">#${o.id.slice(0,8).toUpperCase()}</strong></td>
+          <td>
+            <p style="font-weight:400">${o.customer_first_name} ${o.customer_last_name}</p>
+          </td>
+          <td style="font-size:.8rem;color:var(--gray)">
+            <div>${o.customer_email}</div>
+            <div>${o.customer_phone}</div>
+          </td>
+          <td style="color:var(--gray)">${itemCount} article${itemCount > 1 ? 's' : ''}</td>
+          <td><strong>${new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(o.total_amount)}</strong></td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="font-size:.8rem;color:var(--gray)">${new Date(o.created_at).toLocaleDateString('fr-MA', { day:'2-digit', month:'2-digit', year:'numeric' })}</td>
+          <td>
+            <div style="display:flex;gap:.4rem">
+              <button class="action-btn action-btn--view" onclick="viewOrder('${o.id}')">Détail</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    const pages = Math.ceil(total / LIMIT);
+    const pag = document.getElementById('pagination');
+    if (pages <= 1) { pag.innerHTML = ''; return; }
+    pag.innerHTML = Array.from({length: pages}, (_,i) => `
+      <button style="min-width:32px;height:32px;border:1px solid ${i+1===currentPage?'var(--black)':'var(--gray-light)'};background:${i+1===currentPage?'var(--black)':'transparent'};color:${i+1===currentPage?'white':'var(--gray)'};border-radius:2px;font-size:.78rem;cursor:pointer" onclick="goPage(${i+1})">${i+1}</button>`).join('');
+  }
+
+  function goPage(n) { currentPage = n; loadOrders(); }
+
+  async function viewOrder(id) {
+    const modal = document.getElementById('orderModal');
+    const content = document.getElementById('orderModalContent');
+    content.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+    modal.classList.add('open');
+
+    const order = await fetchOrderById(id);
+    if (!order) { content.innerHTML = '<p>Commande introuvable</p>'; return; }
+
+    document.getElementById('orderModalTitle').textContent = `Commande #${order.id.slice(0,8).toUpperCase()}`;
+
+    content.innerHTML = `
+      <!-- Infos client -->
+      <div style="background:var(--mauve-light);border-radius:4px;padding:1.2rem;margin-bottom:1.5rem">
+        <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:1rem">Informations client</p>
+        <div class="order-detail-grid">
+          <div class="detail-row"><label>Nom complet</label><span>${order.customer_first_name} ${order.customer_last_name}</span></div>
+          <div class="detail-row"><label>Email</label><span>${order.customer_email}</span></div>
+          <div class="detail-row"><label>Téléphone</label><span>${order.customer_phone}</span></div>
+          <div class="detail-row"><label>Date</label><span>${new Date(order.created_at).toLocaleString('fr-MA')}</span></div>
+          <div class="detail-row" style="grid-column:1/-1"><label>Adresse</label><span>${order.customer_address}, ${order.customer_city}</span></div>
+          ${order.customer_comment ? `<div class="detail-row" style="grid-column:1/-1"><label>Commentaire</label><span>${order.customer_comment}</span></div>` : ''}
+        </div>
+      </div>
+
+      <!-- Articles -->
+      <div style="margin-bottom:1.5rem">
+        <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.75rem">Articles commandés</p>
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead>
+            <tr style="border-bottom:1px solid var(--gray-light)">
+              <th style="text-align:left;padding:.5rem;font-weight:500;color:var(--gray);font-size:.7rem;letter-spacing:.1em">Produit</th>
+              <th style="text-align:center;padding:.5rem;font-weight:500;color:var(--gray);font-size:.7rem">Taille</th>
+              <th style="text-align:center;padding:.5rem;font-weight:500;color:var(--gray);font-size:.7rem">Couleur</th>
+              <th style="text-align:center;padding:.5rem;font-weight:500;color:var(--gray);font-size:.7rem">Qté</th>
+              <th style="text-align:right;padding:.5rem;font-weight:500;color:var(--gray);font-size:.7rem">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(order.order_items || []).map(item => `
+              <tr style="border-bottom:1px solid rgba(232,224,224,.5)">
+                <td style="padding:.65rem .5rem">${item.product_name}</td>
+                <td style="text-align:center;padding:.65rem .5rem;color:var(--gray)">${item.size}</td>
+                <td style="text-align:center;padding:.65rem .5rem;color:var(--gray)">${item.color}</td>
+                <td style="text-align:center;padding:.65rem .5rem">${item.quantity}</td>
+                <td style="text-align:right;padding:.65rem .5rem;font-weight:500">${new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(item.total_price)}</td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align:right;padding:.75rem .5rem;font-family:'Cormorant Garamond',serif;font-size:1.1rem">Total commande</td>
+              <td style="text-align:right;padding:.75rem .5rem;font-weight:600;color:var(--rose-deep);font-size:1rem">${new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(order.total_amount)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Statut -->
+      <div style="border-top:1px solid var(--gray-light);padding-top:1.5rem">
+        <p style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gray);margin-bottom:.75rem">Modifier le statut</p>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+          <span>Statut actuel : ${statusBadge(order.status)}</span>
+          <select id="newStatus" style="padding:.55rem 1rem;border:1px solid var(--gray-light);border-radius:4px;font-size:.85rem;background:white">
+            <option value="nouvelle" ${order.status==='nouvelle'?'selected':''}>Nouvelle</option>
+            <option value="confirmee" ${order.status==='confirmee'?'selected':''}>Confirmée</option>
+            <option value="preparation" ${order.status==='preparation'?'selected':''}>En préparation</option>
+            <option value="expediee" ${order.status==='expediee'?'selected':''}>Expédiée</option>
+            <option value="livree" ${order.status==='livree'?'selected':''}>Livrée</option>
+            <option value="annulee" ${order.status==='annulee'?'selected':''}>Annulée</option>
+          </select>
+          <button class="btn btn--rose btn--sm" onclick="saveStatus('${order.id}')">
+            Enregistrer
+          </button>
+        </div>
+      </div>`;
+  }
+
+  async function saveStatus(id) {
+    const status = document.getElementById('newStatus').value;
+    const ok = await updateOrderStatus(id, status);
+    if (ok) {
+      showToast('Statut mis à jour ✓');
+      loadOrders();
+      closeOrderModal();
+    } else {
+      showToast('Erreur lors de la mise à jour', 'error');
+    }
+  }
+
+  function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('open');
+  }
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { currentPage = 1; loadOrders(); }
+  });
+</script>
+</body>
+</html>
